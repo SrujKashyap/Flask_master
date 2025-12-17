@@ -1,15 +1,9 @@
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
-from authlib.integrations.flask_client import OAuth
 import os
+from .extensions import db, oauth
 
-oauth = OAuth()
-db = SQLAlchemy()
-migrate = Migrate()
-jwt = JWTManager()
+
 
 #google OAuth configuration 
 
@@ -18,7 +12,7 @@ google = oauth.register(
 name = 'google',
 client_id = os.environ.get('CLIENT_ID'),
 client_secret = os.environ.get('CLIENT_SECRET'),
-server_metadata_url = 'https://accounts.google.com/.well-known/openid_configuration',
+server_metadata_url = 'https://accounts.google.com/.well-known/openid-configuration',
 client_kwargs = {
     'scope' : 'openid email profile'
 }
@@ -68,5 +62,5 @@ class OAuthAccounts(db.Model):
     user = db.relationship("RegisterUser", back_populates = "oauth_accounts")
 
     __table_args__ = (
-        db.UniqueConstraint("provider", "provider_user_id", name = "uq_provider_provider_user")
+        db.UniqueConstraint("provider", "provider_user_id", name = "uq_provider_provider_user"),
     )

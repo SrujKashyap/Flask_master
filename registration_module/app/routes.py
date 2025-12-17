@@ -1,13 +1,22 @@
-from flask import Blueprint, request, jsonify, url_for, session, redirect
+from flask import Blueprint, request, jsonify, url_for, current_app, redirect
 from .models import RegisterUser, db, google, OAuthAccounts
-import logging
+from urllib.parse import urlencode
 from flask_jwt_extended import (
-
-    create_access_token, create_refresh_token, jwt_required, get_jwt_identity
+    create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt,set_access_cookies,
+    set_refresh_cookies,
+    unset_jwt_cookies
 )
+import os
 
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:8080")
+
+check_bp = Blueprint("check",__name__)
 auth_bp = Blueprint("auth",__name__, url_prefix="/JWT")
 Oauth_bp = Blueprint("oauth",__name__,url_prefix="/google")
+
+@check_bp.route("/health")
+def check_health():
+    return "Health Ok"
 
 
 @auth_bp.route("/register", methods = ['POST'])
@@ -33,11 +42,12 @@ def register():
 
 @auth_bp.route("/login", methods = ['POST'])
 def login():
+    current_app.logger.info("Login Endpoint HIT🔥")
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
 
-    if not email or password:
+    if not email or not password:
         return jsonify({"message":"Enter all the fields"}),400 
     
     user = RegisterUser.query.filter_by(email = email).first()
@@ -45,17 +55,26 @@ def login():
         return jsonify({"error": "Username or Password Invalid"})
     
     # create tokens
+    access_token = create_access_token(identity = str(user.id))
+    refresh_token = create_refresh_token(identity = str(user.id))
 
-    access_token = create_access_token(identity = user.id)
-    refresh_token = create_refresh_token(identity = user.id)
-
-    return jsonify({
-
+    #set them in cookies instead of returning them in JSON
+    response = jsonify({
+        "message": "login successful",
         "access_token": access_token,
         "refresh_token": refresh_token,
         "user": {"id": user.id, "name": user.name, "email": user.email}
+    })
+    unset_jwt_cookies(response)
+    set_access_cookies(response, access_token)
+    set_refresh_cookies(response, refresh_token)
+    print(f"Setting cookies for user {user.id}")
+    print(f"Response headers: {response.headers}")
+    return response, 200
 
-    }), 200
+# @auth_bp.route("/login", methods=['POST'])
+# def login():
+#     raise Exception("THIS IS NOT THE FUNCTION BEING CALLED!!!")
 
 
 
@@ -67,7 +86,36 @@ def refresh():
     new_access_token = create_access_token(identity=identity)
     return jsonify({"access_token": new_access_token}), 200
 
+@auth_bp.route("/me", methods=["POST"])
+@jwt_required()
+def me():
+    """
+    Return the currently logged-in user.
+    Works with tokens stored in HttpOnly cookies.
+    """
+    print("ME endpoint hit")
+    print(f"Cookies: {request.cookies}")
+    user_id = get_jwt_identity()   # you stored identity=str(user.id)
+    print(f"User ID from JWT: {user_id}")
+    data = request.get_json()
+    password = data.get("password")
 
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid user id in token"}), 400
+
+    user = RegisterUser.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    user.password = password
+    db.session.add(user)
+    db.session.commit()
+    return jsonify({
+        "id": user.id,
+        "name": user.name,
+        "email": user.email
+    }), 200
 
 
 @Oauth_bp.route("/login", methods = ['GET','POST'])
@@ -76,7 +124,7 @@ def google_login():
         redirect_url = url_for(f'{Oauth_bp.name}.callback', _external = True)
         return google.authorize_redirect(redirect_url)
     except Exception as e:
-        logging.error(f"Error during login: {str(e)}")
+        current_app.logger.error(f"Error during login: {str(e)}")
         return "Error Occured during Login", 500
 
 @Oauth_bp.route("/authorize", methods = ["POST", "GET"])
@@ -89,13 +137,13 @@ def callback():
 
     provider = "google"
     provider_user_id = user_info['sub']
-    provider_email = user_info.get("email")
+    provider_email = user_info.get("email").lower()
     provider_username = user_info.get("name") or provider_email.split("@")[0]
     provider_picture = user_info.get("picture")
     email_verified = user_info.get("email_verified", True)  # Google ALWAYS sends true - so we can skip this 
 
 
-    # Case A - Check if the google account is already present in Oauth DB and log the user 
+    # Case A - Check if the google account is already present in Oauth DB and log the user in
     oauth_account = OAuthAccounts.query.filter_by( 
         provider = provider,
         provider_user_id = provider_user_id     
@@ -103,9 +151,16 @@ def callback():
     
     if oauth_account:
         #Account is already linked / just login that user 
-        session["username"] = oauth_account.user.email
-        session["oauth_token"] = token
-        return redirect(url_for('dashboard'))
+        user = oauth_account.user
+        access_token = create_access_token(identity=str(user.id))
+        refresh_token = create_refresh_token(identity=str(user.id))
+
+        redirect_url = f"{FRONTEND_URL}/auth/success?status=google_linked_login"
+        response = redirect(redirect_url)
+        set_access_cookies(response, access_token)
+        set_refresh_cookies(response, refresh_token)
+        return response
+
     
     
 
@@ -128,9 +183,15 @@ def callback():
         db.session.add(new_oauth)
         db.session.commit()
 
-        session["username"] = user.email
-        session["oauth_token"] = token
-        return redirect(url_for("dashboard"))
+        access_token = create_access_token(identity=str(user.id))
+        refresh_token = create_refresh_token(identity=str(user.id))
+
+        redirect_url = f"{FRONTEND_URL}/auth/success?status=google_linked_existing"
+        response = redirect(redirect_url)
+        set_access_cookies(response, access_token)
+        set_refresh_cookies(response, refresh_token)
+        return response
+
 
     # Case C - user is logging in to the system for the first time thru google so create an entry in RegisterUser DB and in the OAuth table
     
@@ -157,6 +218,32 @@ def callback():
     db.session.add(new_oauth)
     db.session.commit()
 
-    session["username"] = user.email
-    session["oauth_token"] = token
-    return redirect(url_for("dashboard"))
+    access_token = create_access_token(identity=str(user.id))
+    refresh_token = create_refresh_token(identity=str(user.id))
+
+    redirect_url = f"{FRONTEND_URL}/auth/success/set_pass?status=google_linked_new_user"
+    response = redirect(redirect_url)
+    set_access_cookies(response, access_token)
+    set_refresh_cookies(response, refresh_token)
+    return response
+
+
+
+@auth_bp.route("/logout", methods=["POST"])
+def logout():
+    current_app.logger.info("inside logout route (no auth required)")
+    
+    # Even if no cookies or bad cookies, just tell browser to clear them
+    response = jsonify({"message": "Logout successful"})
+    unset_jwt_cookies(response)
+    return response, 200
+
+
+
+
+
+
+@auth_bp.route("/debug/users", methods=["GET"])
+def debug_users():
+    users = RegisterUser.query.all()
+    return jsonify([{"id": u.id, "email": u.email, "name": u.name} for u in users])
