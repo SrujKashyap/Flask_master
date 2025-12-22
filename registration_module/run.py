@@ -1,5 +1,5 @@
 from registration_module.app import create_app
-from app.extensions import db
+from registration_module.app.extensions import db
 import os
 
 app = create_app()
