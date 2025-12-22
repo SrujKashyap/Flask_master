@@ -27,5 +27,6 @@ jobs:
             docker rm flask-backend || true
             docker run -d \
               --name flask-backend \
+              --env-file /home/ubuntu/backend.env \
               -p 5000:5000 \
               flask-master-backend
