@@ -1,38 +1,43 @@
-# 1️⃣ Use the exact Python version your project uses
+# 1️ Use the exact Python version your project uses
 FROM python:3.9-slim
 
 # Add environment variables for Flask
 ENV FLASK_APP=run.py
 ENV FLASK_ENV=production
 
-# 2️⃣ Disable .pyc files (cleaner containers)
+# 2️ Disable .pyc files (cleaner containers)
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# 3️⃣ Ensure logs appear instantly (important for Docker)
+# 3️ Ensure logs appear instantly (important for Docker)
 ENV PYTHONUNBUFFERED=1
 
-# 4️⃣ Set working directory inside container
+# 4️ Set working directory inside container
 WORKDIR /app
 
-# 5️⃣ Install OS-level dependencies (safe default)
+# 5️ Install OS-level dependencies (safe default)
 RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# 6️⃣ Copy only requirements first (Docker caching optimization)
+# 6️ Copy only requirements first (Docker caching optimization)
 COPY requirements.txt .
 
-# 7️⃣ Install Python dependencies
+# 7️ Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 8️⃣ Copy application code
+# 8️ Copy application code
 COPY registration_module ./registration_module
 
-# 9️⃣ Ensure instance folder exists (SQLite DB lives here)
-RUN mkdir -p instance
+# 9️ Ensure instance folder exists (SQLite DB lives here)
+RUN mkdir -p registration_module/instance
 
-# 🔟 Expose the port Gunicorn listens on
+# 10 Run database migrations
+WORKDIR /app/registration_module
+RUN flask db upgrade
+WORKDIR /app
+
+# 11 Expose the port Gunicorn listens on
 EXPOSE 5000
 
-# 1️⃣1️⃣ Start Flask app using Gunicorn
+# 12 Start Flask app using Gunicorn
 CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:5000", "registration_module.run:app"]
