@@ -1,4 +1,4 @@
-from app import create_app
+from registration_module.app import create_app
 from app.extensions import db
 import os
 
