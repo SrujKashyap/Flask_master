@@ -4,7 +4,7 @@ from .extensions import db, migrate, jwt, oauth
 from .routes import auth_bp, Oauth_bp, check_bp
 from .config import DevelopmentConfig
 import logging
-
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 def create_app(config_object=DevelopmentConfig):
 
@@ -26,7 +26,7 @@ def create_app(config_object=DevelopmentConfig):
          allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
          supports_credentials=True)
 
-    
+    app.wsgi_app = ProxyFix( app.wsgi_app, x_proto=1, x_host=1)
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)

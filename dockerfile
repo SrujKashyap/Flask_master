@@ -35,4 +35,4 @@ RUN mkdir -p instance
 EXPOSE 5000
 
 # 1️⃣1️⃣ Start Flask app using Gunicorn
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "registration_module.run:app"]
+CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:5000", "registration_module.run:app"]
