@@ -6,7 +6,7 @@ from .extensions import db, oauth
 
 
 #google OAuth configuration 
-
+print("CLIENT_ID from env:", os.environ.get("CLIENT_ID"))
 google = oauth.register(
 
 name = 'google',
