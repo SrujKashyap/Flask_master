@@ -31,13 +31,10 @@ COPY registration_module/ ./registration_module
 # 9️ Ensure instance folder exists (SQLite DB lives here)
 RUN mkdir -p registration_module/instance
 
-# 10️ Run database migrations
-WORKDIR /app/registration_module
-RUN flask db upgrade
-WORKDIR /app
+
 
 # 11️ Expose the port Gunicorn listens on
 EXPOSE 5000
 
 # 12️ Start Flask app using Gunicorn
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "registration_module.run:app"]
+CMD sh -c "cd /app/registration_module && flask --app app:create_app db upgrade && gunicorn -w 2 -b 0.0.0.0:5000 registration_module.run:app"
