@@ -37,5 +37,6 @@ RUN mkdir -p registration_module/instance
 EXPOSE 5000
 
 # 12️ Start Flask app using Gunicorn
-CMD sh -c "cd /app/registration_module && flask db upgrade && cd /app && gunicorn -w 2 -b 0.0.0.0:5000 registration_module.run:app"
+#CMD sh -c "cd /app/registration_module && flask db upgrade && cd /app && gunicorn -w 2 -b 0.0.0.0:5000 registration_module.run:app"
+CMD sh -c "flask db upgrade && gunicorn -w 2 -b 0.0.0.0:5000 registration_module.run:app"
 
