@@ -26,7 +26,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 8️ Copy application code
-COPY registration_module ./registration_module
+COPY registration_module/ ./registration_module
 
 # 9️ Ensure instance folder exists (SQLite DB lives here)
 RUN mkdir -p registration_module/instance
