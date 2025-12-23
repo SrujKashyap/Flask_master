@@ -12,7 +12,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # 4️ Set working directory inside container
-WORKDIR /app
+WORKDIR /app/registration_module
 
 # 5️ Install OS-level dependencies (safe default)
 RUN apt-get update && apt-get install -y \
