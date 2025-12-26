@@ -26,10 +26,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 8️ Copy application code
-COPY registration_module/ ./registration_module
+COPY registration_module/ ./
 
 # 9️ Ensure instance folder exists (SQLite DB lives here)
-RUN mkdir -p registration_module/instance
+RUN mkdir -p instance
 
 
 
@@ -38,5 +38,6 @@ EXPOSE 5000
 
 # 12️ Start Flask app using Gunicorn
 #CMD sh -c "cd /app/registration_module && flask db upgrade && cd /app && gunicorn -w 2 -b 0.0.0.0:5000 registration_module.run:app"
-CMD sh -c "flask db upgrade && gunicorn -w 2 -b 0.0.0.0:5000 registration_module.run:app"
+CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "run:app"]
+
 

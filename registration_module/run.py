@@ -1,14 +1,12 @@
-from registration_module.app import create_app
-from registration_module.app.extensions import db
-
+from app import create_app
+from app.extensions import db
 import os
 
 app = create_app()
 
+# Create tables on startup (since no migrations)
+with app.app_context():
+    db.create_all()
+
 if __name__ == "__main__":
-    # Only create tables in development
-    if os.environ.get('FLASK_ENV') != 'production':
-        with app.app_context():
-            db.create_all()
-    
     app.run()
