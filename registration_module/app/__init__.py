@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from .extensions import db, migrate, jwt, oauth
+from .extensions import db, jwt, oauth
 from .routes import auth_bp, Oauth_bp, check_bp
 import logging
 from werkzeug.middleware.proxy_fix import ProxyFix
