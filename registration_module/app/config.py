@@ -7,8 +7,8 @@ class BaseConfig:
 
     #jwt settings
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "jwt-secret-key-change-in-production")
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=int(os.environ.get("JWT_ACCESS_MINUTES", 15)))
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.environ.get("JWT_REFRESH_DAYS", 30))) 
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=int(os.environ.get("JWT_ACCESS_MINUTES", 45)))
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.environ.get("JWT_REFRESH_DAYS", 90))) 
     JWT_TOKEN_LOCATION = ["headers", "cookies"]
     JWT_COOKIE_SECURE = True #set to true in Production and Flase in dev
     JWT_COOKIE_SAMESITE = "None"  # Use Lax for localhost development
@@ -16,7 +16,7 @@ class BaseConfig:
     JWT_COOKIE_DOMAIN = ".forgecode.in"  # Allow cookies on localhost
     JWT_ACCESS_COOKIE_PATH = "/"
     JWT_REFRESH_COOKIE_PATH = "/"
-    
+
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_SAMESITE = "None"
     SESSION_COOKIE_HTTPONLY = True
