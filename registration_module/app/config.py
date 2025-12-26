@@ -12,10 +12,19 @@ class BaseConfig:
     JWT_TOKEN_LOCATION = ["headers", "cookies"]
     JWT_COOKIE_SECURE = True #set to true in Production and Flase in dev
     JWT_COOKIE_SAMESITE = "None"  # Use Lax for localhost development
-    JWT_COOKIE_CSRF_PROTECT = True  # Disable for development
-    JWT_COOKIE_DOMAIN = None  # Allow cookies on localhost
+    JWT_COOKIE_CSRF_PROTECT = False  # Disable for development
+    JWT_COOKIE_DOMAIN = ".forgecode.in"  # Allow cookies on localhost
     JWT_ACCESS_COOKIE_PATH = "/"
-    JWT_REFRESH_COOKIE_PATH = "/" 
+    JWT_REFRESH_COOKIE_PATH = "/"
+    
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_DOMAIN = ".forgecode.in"
+ 
+
+
+     
 
 
 
