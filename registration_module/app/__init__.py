@@ -37,7 +37,6 @@ def create_app(config_object=None):
 
     app.wsgi_app = ProxyFix( app.wsgi_app, x_proto=1, x_host=1)
     db.init_app(app)
-    migrate.init_app(app, db)
     jwt.init_app(app)
     oauth.init_app(app)   # initalize OAuth with this app
 
