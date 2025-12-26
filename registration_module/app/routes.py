@@ -86,7 +86,7 @@ def refresh():
     new_access_token = create_access_token(identity=identity)
     return jsonify({"access_token": new_access_token}), 200
 
-@auth_bp.route("/me", methods=["GET"])
+@auth_bp.route("/me", methods=["GET","POST"])
 @jwt_required()
 def me():
     """
