@@ -23,11 +23,6 @@ class BaseConfig:
     SESSION_COOKIE_DOMAIN = ".forgecode.in"
  
 
-
-     
-
-
-
 class DevelopmentConfig(BaseConfig):
      DEBUG = True
      SQLALCHEMY_DATABASE_URI = os.environ.get("DEV_DATABASE_URL", "sqlite:///app.db")

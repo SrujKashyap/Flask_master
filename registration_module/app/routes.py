@@ -43,6 +43,9 @@ def register():
 @auth_bp.route("/login", methods = ['POST'])
 def login():
     current_app.logger.info("Login Endpoint HIT🔥")
+    current_app.logger.info(f"Content-Type: {request.content_type}")  # ✅ Add this
+    current_app.logger.info(f"Headers: {request.headers}")  # ✅ Add this
+
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
@@ -71,11 +74,6 @@ def login():
     print(f"Setting cookies for user {user.id}")
     print(f"Response headers: {response.headers}")
     return response, 200
-
-# @auth_bp.route("/login", methods=['POST'])
-# def login():
-#     raise Exception("THIS IS NOT THE FUNCTION BEING CALLED!!!")
-
 
 
 @auth_bp.route("/refresh", methods=["POST"])
