@@ -55,6 +55,10 @@ def create_app(config_object=None):
         print(f"Missing token: {error}")
         return jsonify({"error": "Authorization token required"}), 401
 
+    @app.errorhandler(415)
+    def unsupported_media_type(error):
+        return jsonify({"error": "Content-Type must be application/json"}), 415
+
     
 
 

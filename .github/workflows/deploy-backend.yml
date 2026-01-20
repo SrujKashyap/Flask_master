@@ -21,12 +21,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/Flask_master
+            git fetch origin main
             git pull origin main
-            docker build -t flask-master-backend .
-            docker stop flask-backend || true
-            docker rm flask-backend || true
-            docker run -d \
-              --name flask-backend \
-              --env-file /home/ubuntu/backend.env \
-              -p 5000:5000 \
-              flask-master-backend
+            
