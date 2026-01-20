@@ -43,10 +43,15 @@ def register():
 @auth_bp.route("/login", methods = ['POST'])
 def login():
     current_app.logger.info("Login Endpoint HIT🔥")
-    current_app.logger.info(f"Content-Type: {request.content_type}")  # ✅ Add this
-    current_app.logger.info(f"Headers: {request.headers}")  # ✅ Add this
+    current_app.logger.info(f"Content-Type: {request.content_type}")
+    current_app.logger.info(f"Raw data: {request.get_data()}")
 
     data = request.get_json()
+    current_app.logger.info(f"Parsed JSON: {data}")
+    
+    if data is None:
+        return jsonify({"error": "Invalid JSON or Content-Type not application/json"}), 400
+    
     email = data.get("email")
     password = data.get("password")
 
@@ -54,7 +59,14 @@ def login():
         return jsonify({"message":"Enter all the fields"}),400 
     
     user = RegisterUser.query.filter_by(email = email).first()
+    print(f"User found: {user is not None}")
+    if user:
+        print(f"User ID: {user.id}, Name: {user.name}, Has password_hash: {bool(user.password_hash)}")
+        if not user.password_hash:
+            return jsonify({"error": "Account created via Google. Please login with Google or set a password first."}), 400
+    
     if not user or not user.check_password(password):
+        print("Login failed - invalid credentials")
         return jsonify({"error": "Username or Password Invalid"})
     
     # create tokens
@@ -84,31 +96,67 @@ def refresh():
     new_access_token = create_access_token(identity=identity)
     return jsonify({"access_token": new_access_token}), 200
 
-@auth_bp.route("/me", methods=["GET","POST"])
+
+# ============================================================
+# FIXED /me ENDPOINT - THIS IS THE KEY CHANGE
+# ============================================================
+@auth_bp.route("/me", methods=["GET", "POST"])
 @jwt_required()
 def me():
     """
-    Return the currently logged-in user.
-    Works with tokens stored in HttpOnly cookies.
+    GET: Return the currently logged-in user info (NO JSON BODY REQUIRED)
+    POST: Set password for OAuth users (REQUIRES JSON BODY)
     """
-    print("ME endpoint hit")
-    print(f"Cookies: {request.cookies}")
-    user_id = get_jwt_identity()   # you stored identity=str(user.id)
-    print(f"User ID from JWT: {user_id}")
-    data = request.get_json()
-    password = data.get("password")
-
+    current_app.logger.info(f"ME endpoint hit - Method: {request.method}")
+    current_app.logger.info(f"Content-Type: {request.content_type}")
+    current_app.logger.info(f"Cookies: {request.cookies}")
+    
+    # Get user ID from JWT
+    user_id = get_jwt_identity()
+    current_app.logger.info(f"User ID from JWT: {user_id}")
+    
+    # Validate user ID
     try:
         user_id = int(user_id)
     except (TypeError, ValueError):
         return jsonify({"error": "Invalid user id in token"}), 400
-
+    
+    # Get user from database
     user = RegisterUser.query.get(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
-    user.password = password
-    db.session.add(user)
-    db.session.commit()
+    
+    # ===== HANDLE POST REQUEST (Set Password) =====
+    if request.method == "POST":
+        current_app.logger.info("Processing POST request to set password")
+        
+        # Try to get JSON data
+        data = request.get_json(silent=True)  # silent=True prevents 415 error
+        
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+        
+        password = data.get("password")
+        if not password:
+            return jsonify({"error": "Password is required"}), 400
+        
+        # Set password (your RegisterUser model handles hashing via the property setter)
+        user.password = password
+        db.session.commit()
+        
+        current_app.logger.info(f"Password set successfully for user {user.id}")
+        
+        return jsonify({
+            "message": "Password set successfully",
+            "id": user.id,
+            "name": user.name,
+            "email": user.email
+        }), 200
+    
+    # ===== HANDLE GET REQUEST (Return User Info) =====
+    # NO JSON PARSING HERE - GET requests don't have bodies!
+    current_app.logger.info("Processing GET request to fetch user info")
+    
     return jsonify({
         "id": user.id,
         "name": user.name,
@@ -235,10 +283,6 @@ def logout():
     response = jsonify({"message": "Logout successful"})
     unset_jwt_cookies(response)
     return response, 200
-
-
-
-
 
 
 @auth_bp.route("/debug/users", methods=["GET"])
